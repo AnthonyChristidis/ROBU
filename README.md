@@ -1,6 +1,8 @@
 # ROBU: Fast Robust Regression via Orthogonal Block Updates
 
-This repository contains the R implementation of the **ROBU** algorithm, as well as all code necessary to reproduce the simulation studies and real data applications from the manuscript *"Fast Robust Regression via Orthogonal Block Updates"*.
+**Authors:** Anthony Christidis and Matías Salibián-Barrera
+
+This repository contains the R implementation of the **ROBU** algorithm, as well as all code necessary to reproduce the simulation studies and real data applications from the manuscript *"Fast Robust Regression via Orthogonal Block Updates"* by Anthony Christidis and Matías Salibián-Barrera.
 
 ## Overview
 
