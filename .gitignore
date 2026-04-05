@@ -29,6 +29,7 @@ sandbox/
 
 # Cluster Logs (O2 Output/Error files)
 logs/
+*.sh
 
 # Large Datasets and Raw Results
 application/data/
