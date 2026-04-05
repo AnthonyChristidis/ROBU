@@ -9,13 +9,24 @@ This folder contains the scripts required to reproduce the Monte Carlo simulatio
 * `run_k_sensitivity.R`: The script that evaluates the performance of the ROBU algorithm across a grid of block dimensions ($k$) to demonstrate the optimal trade-off between computational speed and empirical breakdown resistance.
 
 ## Dependencies
-Running these simulations requires the fast multivariate normal generator `mvnfast`, alongside the core robust statistics packages. You can install them via CRAN:
+
+**1. Core Statistical Packages (Strict versions for reproducibility):**
 
 ```R
 install.packages("remotes")
 remotes::install_version("robustbase", version = "0.99.6")
 remotes::install_version("RobStatTM", version = "1.0.11")
 remotes::install_version("mvnfast", version = "0.2.8")
+```
+
+**2. Plotting and Formatting Packages:**
+
+```R
+remotes::install_version("ggplot2", version = "4.0.1")
+remotes::install_version("dplyr", version = "1.1.4")
+remotes::install_version("xtable", version = "1.8.4")
+remotes::install_version("gridExtra", version = "2.3")
+remotes::install_version("scales", version = "1.4.0")
 ```
 
 ## Usage

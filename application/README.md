@@ -7,6 +7,7 @@ This folder contains the scripts required to reproduce the real-world data analy
 * `run_real_data.R`: The master script for the application. It automatically downloads the matched RNA-seq and proteomic data, applies an unsupervised variance filter to retain $p=300$ genes, injects artificial concentrated leverage points into 15% of the patients, and benchmarks the algorithms.
 
 ## Dependencies
+
 Because this script pulls standardized, high-dimensional multi-assay genomic data directly from The Cancer Genome Atlas (TCGA), it requires specific packages from **Bioconductor** in addition to the standard CRAN packages.
 
 **1. Install CRAN packages:**
@@ -26,6 +27,15 @@ if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 remotes::install_version("BiocManager", version = "1.30.27")
 remotes::install_version("curatedTCGAData", version = "1.32.1", repos = BiocManager::repositories())
 remotes::install_version("TCGAutils", version = "1.30.2", repos = BiocManager::repositories())
+```
+
+**3. Plotting and Formatting Packages:**
+
+```R
+remotes::install_version("ggplot2", version = "4.0.1")
+remotes::install_version("tidyr", version = "1.3.2")
+remotes::install_version("xtable", version = "1.8.4")
+remotes::install_version("scales", version = "1.4.0")
 ```
 
 ## Usage
