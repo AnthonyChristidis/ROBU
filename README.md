@@ -19,7 +19,6 @@ install.packages(c("robustbase", "RobStatTM", "mvnfast"))
 * **`R/`**: Contains the core algorithm functions (`robu.R` and `irwls.R`). These are all you need to apply ROBU to your own data.
 * **`simulations/`**: Contains the data generation functions and the scripts to reproduce the Monte Carlo simulation grid (computation time and MSE) presented in the paper.
 * **`application/`**: Contains the code for the real-world data application, including the artificial leverage point contamination and benchmarking.
-* **`sandbox/`**: Contains preliminary testing scripts to verify the algorithm's behavior under different contamination scenarios.
 
 ## Quick Start
 
