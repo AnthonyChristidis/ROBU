@@ -170,7 +170,7 @@ for (rep in 1:n_reps) {
   t_mm <- system.time({
     fit_mm <- run_silently(robustbase::lmrob(y_cont ~ X_cont - 1, control = my.control), p)
   })["elapsed"]
-  mse_mm <- calc_mse(coef(fit_mm))
+  mse_mm <- calc_mse(fit_mm$coefficients)
   
   # D. Run ROBU
   t_robu <- system.time({
@@ -186,13 +186,29 @@ for (rep in 1:n_reps) {
     MSE_vs_Baseline = c(mse_ols, mse_mm, mse_robu)
   )
   
-  # Store residual data from the final replication for plotting
+  # F. Store residual data from the final replication for the 2-panel plot
   if (rep == n_reps) {
+    
+    # Safely extract MM residuals (fill with 0s if it completely crashed to avoid ggplot errors)
+    res_mm <- if (any(is.na(fit_mm$coefficients))) {
+      rep(0, n)
+    } else {
+      drop(y_cont - (X_cont %*% fit_mm$coefficients))
+    }
+    
+    # Safely extract ROBU residuals
+    res_robu <- if (any(is.na(fit_robu$coefficients))) {
+      rep(0, n)
+    } else {
+      drop(y_cont - (X_cont %*% fit_robu$coefficients))
+    }
+    
     plot_data <- data.frame(
       Patient_ID = rownames(X_cont),
       Is_Contaminated = is_outlier,
-      Residuals_CleanBaseline = y_clean - (X_clean %*% beta_clean),
-      Residuals_ROBU_Contam = fit_robu$residuals
+      Residuals_CleanBaseline = drop(y_clean - (X_clean %*% beta_clean)),
+      Residuals_MM_Contam = res_mm,
+      Residuals_ROBU_Contam = res_robu
     )
   }
 }
@@ -216,7 +232,7 @@ cat("======================================================\n")
 # Save the summary table
 saveRDS(summary_table, "application/results/tcga_performance_table.rds")
 
-# Save residuals for plotting (ROBU vs Baseline)
+# Save residuals for plotting (Standard MM & ROBU vs Baseline)
 saveRDS(plot_data, "application/results/tcga_residuals_plotdata.rds")
 
 cat("\nAnalysis complete. Results and plot data saved to application/results/\n")

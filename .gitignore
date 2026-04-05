@@ -10,18 +10,6 @@
 
 # Knitr/RMarkdown generated files
 *.utf8.md
-*.knit.md# History and session data
-.Rhistory
-.RData
-.Rapp.history
-.Ruserdata
-
-# Project files
-*.Rproj
-.Rproj.user/
-
-# Knitr/RMarkdown generated files
-*.utf8.md
 *.knit.md
 
 # OS generated files
@@ -33,20 +21,16 @@
 ehthumbs.db
 Thumbs.db
 
+# Ignore all RDS binary files globally
+*.rds
+
 # Experimental/Testing folders
 sandbox/
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Ignore downloaded genomic datasets
-application/data/
-
 # Cluster Logs (O2 Output/Error files)
 logs/
+
+# Large Datasets and Raw Results
+application/data/
+application/results/
+simulations/results/
