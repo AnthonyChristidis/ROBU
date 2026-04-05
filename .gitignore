@@ -1,0 +1,46 @@
+# History and session data
+.Rhistory
+.RData
+.Rapp.history
+.Ruserdata
+
+# Project files
+*.Rproj
+.Rproj.user/
+
+# Knitr/RMarkdown generated files
+*.utf8.md
+*.knit.md# History and session data
+.Rhistory
+.RData
+.Rapp.history
+.Ruserdata
+
+# Project files
+*.Rproj
+.Rproj.user/
+
+# Knitr/RMarkdown generated files
+*.utf8.md
+*.knit.md
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Experimental/Testing folders
+sandbox/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
