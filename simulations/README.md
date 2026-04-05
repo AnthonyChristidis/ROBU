@@ -1,6 +1,6 @@
 # Simulations
 
-This folder contains the scripts required to reproduce the Monte Carlo simulation study (Section 4) and the block-size sensitivity analysis (Section S5 of the Supplementary Material) from the manuscript.
+This folder contains the scripts required to reproduce the Monte Carlo simulation study (Section 4) and the block-size sensitivity analysis from the manuscript.
 
 ## Files
 
