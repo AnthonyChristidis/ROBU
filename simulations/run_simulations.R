@@ -1,6 +1,6 @@
-# ---------------------------------------------
-# ROBU: Master Monte Carlo Simulation Script
-# ---------------------------------------------
+# --------------------------------
+# ROBU: Master Simulation Script
+# --------------------------------
 
 # Load necessary packages
 library(robustbase)

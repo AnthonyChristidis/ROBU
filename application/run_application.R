@@ -16,7 +16,7 @@ source("R/irwls.R")
 source("R/robu.R")
 
 # Set seed for reproducibility
-set.seed(2024)
+set.seed(0)
 
 # ____________________________________
 # 1. Data Downloading and Processing 
@@ -117,96 +117,106 @@ cat("Fitting Standard MM to clean data (this may take 1-2 minutes)...\n")
 fit_clean <- robustbase::lmrob(y_clean ~ X_clean - 1, control = my.control)
 beta_clean <- coef(fit_clean)
 
-# ________________________________________
-# 4. Introduce Adversarial Contamination
-# ________________________________________
+# ______________________________________________________________
+# 4. Repeated Contamination & Benchmarking (50 Replications)
+# ______________________________________________________________
 
-cat("\n--- Injecting Adversarial Leverage Points ---\n")
-
-X_cont <- X_clean
-y_cont <- y_clean
-
+k.blocks <- max(1, floor(p / 20))
+n_reps <- 50
 cont_prop <- 0.15
 n_cont <- floor(cont_prop * n)
 
-# Randomly select 15% of patients and 30 genes to corrupt
-bad_patients <- sample(1:n, n_cont)
-bad_genes <- sample(1:p, 30)
+results_list <- list()
+plot_data <- NULL # Will store the residuals from the final rep for plotting
 
-# Corrupt X: Add massive noise N(100, 10^2)
-X_cont[bad_patients, bad_genes] <- X_cont[bad_patients, bad_genes] + 
-  matrix(rnorm(n_cont * 30, mean = 100, sd = 10), nrow = n_cont, ncol = 30)
-
-# Corrupt y: Generate adversarial response
-beta_bad <- rnorm(p, mean = -5, sd = 2)
-y_cont[bad_patients] <- X_cont[bad_patients, ] %*% beta_bad + rnorm(n_cont, 0, 1)
-
-# Create a boolean vector of true outliers for our plots later
-is_outlier <- rep(FALSE, n)
-is_outlier[bad_patients] <- TRUE
-
-# ______________________________________________
-# 5. Benchmarking Methods on Contaminated Data
-# ______________________________________________
-
-cat("\n--- Benchmarking Algorithms on Contaminated Data ---\n")
+cat(sprintf("\n--- Running %d Replications of Adversarial Contamination ---\n", n_reps))
 
 # Helper to calculate MSE relative to clean baseline
 calc_mse <- function(beta_est) {
   mean((beta_est - beta_clean)^2)
 }
 
-# A. Standard OLS
-cat("Running OLS...\n")
-t_ols <- system.time({
-  fit_ols <- lm(y_cont ~ X_cont - 1)
-})["elapsed"]
-mse_ols <- calc_mse(coef(fit_ols))
+# Helper to silently catch warnings to prevent console spam
+run_silently <- function(expr, p_vars) {
+  tryCatch({
+    withCallingHandlers(expr, warning = function(w) invokeRestart("muffleWarning"))
+  }, error = function(e) list(coefficients = rep(NA, p_vars), residuals = rep(NA, n)))
+}
 
-# B. Standard MM
-cat("Running Standard MM...\n")
-t_mm <- system.time({
-  fit_mm <- tryCatch({
-    robustbase::lmrob(y_cont ~ X_cont - 1, control = my.control)
-  }, error = function(e) list(coefficients = rep(NA, p), residuals = rep(NA, n)))
-})["elapsed"]
-mse_mm <- calc_mse(coef(fit_mm))
-
-# C. ROBU
-cat("Running ROBU...\n")
-k.blocks <- max(1, floor(p / 20))
-t_robu <- system.time({
-  fit_robu <- robu(x = X_cont, y = y_cont, k = k.blocks, 
-                   robu.control = my.control, m.control = my.control)
-})["elapsed"]
-mse_robu <- calc_mse(fit_robu$coefficients)
+for (rep in 1:n_reps) {
+  cat(sprintf("Running Rep %d / %d...\n", rep, n_reps))
+  
+  # A. Inject Adversarial Leverage Points
+  X_cont <- X_clean
+  y_cont <- y_clean
+  
+  bad_patients <- sample(1:n, n_cont)
+  bad_genes <- sample(1:p, 30)
+  
+  X_cont[bad_patients, bad_genes] <- X_cont[bad_patients, bad_genes] + 
+    matrix(rnorm(n_cont * 30, mean = 100, sd = 10), nrow = n_cont, ncol = 30)
+  
+  beta_bad <- rnorm(p, mean = -5, sd = 2)
+  y_cont[bad_patients] <- X_cont[bad_patients, ] %*% beta_bad + rnorm(n_cont, 0, 1)
+  
+  is_outlier <- rep(FALSE, n)
+  is_outlier[bad_patients] <- TRUE
+  
+  # B. Run OLS
+  t_ols <- system.time({ fit_ols <- lm(y_cont ~ X_cont - 1) })["elapsed"]
+  mse_ols <- calc_mse(coef(fit_ols))
+  
+  # C. Run Standard MM
+  t_mm <- system.time({
+    fit_mm <- run_silently(robustbase::lmrob(y_cont ~ X_cont - 1, control = my.control), p)
+  })["elapsed"]
+  mse_mm <- calc_mse(coef(fit_mm))
+  
+  # D. Run ROBU
+  t_robu <- system.time({
+    fit_robu <- run_silently(robu(x = X_cont, y = y_cont, k = k.blocks, robu.control = my.control, m.control = my.control), p)
+  })["elapsed"]
+  mse_robu <- calc_mse(fit_robu$coefficients)
+  
+  # E. Store Rep Results
+  results_list[[rep]] <- data.frame(
+    Rep = rep,
+    Method = c("OLS", "Standard MM", "ROBU"),
+    Time_Seconds = unname(c(t_ols, t_mm, t_robu)),
+    MSE_vs_Baseline = c(mse_ols, mse_mm, mse_robu)
+  )
+  
+  # Store residual data from the final replication for plotting
+  if (rep == n_reps) {
+    plot_data <- data.frame(
+      Patient_ID = rownames(X_cont),
+      Is_Contaminated = is_outlier,
+      Residuals_CleanBaseline = y_clean - (X_clean %*% beta_clean),
+      Residuals_ROBU_Contam = fit_robu$residuals
+    )
+  }
+}
 
 # ______________________________
-# 6. Summarize and Save Results
+# 5. Summarize and Save Results
 # ______________________________
 
-results_table <- data.frame(
-  Method = c("OLS", "Standard MM", "ROBU"),
-  Time_Seconds = c(t_ols, t_mm, t_robu),
-  MSE_vs_Baseline = c(mse_ols, mse_mm, mse_robu)
-)
+all_results <- do.call(rbind, results_list)
+saveRDS(all_results, "application/results/tcga_full_results.rds")
 
-cat("\n========================================\n")
-cat("      PROTEOGENOMICS APPLICATION RESULTS  \n")
-cat("========================================\n")
-print(results_table, row.names = FALSE)
-cat("========================================\n")
+# Calculate Averages
+summary_table <- aggregate(cbind(Time_Seconds, MSE_vs_Baseline) ~ Method, data = all_results, FUN = mean, na.rm = TRUE)
 
-# Save the table
-saveRDS(results_table, "application/results/tcga_performance_table.rds")
+cat("\n======================================================\n")
+cat("   PROTEOGENOMICS APPLICATION: AVERAGE OVER 50 REPS   \n")
+cat("======================================================\n")
+print(summary_table, row.names = FALSE)
+cat("======================================================\n")
 
-# Save residuals for plotting (ROBU vs Baseline to show identical outlier detection)
-plot_data <- data.frame(
-  Patient_ID = rownames(X_cont),
-  Is_Contaminated = is_outlier,
-  Residuals_CleanBaseline = y_clean - (X_clean %*% beta_clean),
-  Residuals_ROBU_Contam = fit_robu$residuals
-)
+# Save the summary table
+saveRDS(summary_table, "application/results/tcga_performance_table.rds")
+
+# Save residuals for plotting (ROBU vs Baseline)
 saveRDS(plot_data, "application/results/tcga_residuals_plotdata.rds")
 
 cat("\nAnalysis complete. Results and plot data saved to application/results/\n")

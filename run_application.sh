@@ -3,7 +3,7 @@
 #SBATCH --output=logs/app_%j.out                        # Standard output log
 #SBATCH --error=logs/app_%j.err                         # Standard error log
 #SBATCH --partition=short                               # Short partition
-#SBATCH --time=4:00:00                                  # Time limit
+#SBATCH --time=1:30:00                                  # Time limit
 #SBATCH --ntasks=1                                      # Number of tasks
 #SBATCH --cpus-per-task=1                               # 1 core
 #SBATCH --mem=8G                                        # 8GB RAM
