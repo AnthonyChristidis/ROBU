@@ -47,3 +47,6 @@ Thumbs.db
 
 # Ignore downloaded genomic datasets
 application/data/
+
+# Cluster Logs (O2 Output/Error files)
+logs/
