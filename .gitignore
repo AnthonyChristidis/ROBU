@@ -44,3 +44,6 @@ sandbox/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Ignore downloaded genomic datasets
+application/data/
