@@ -142,11 +142,11 @@ for (p.vars in p.vec) {
         
         # Generate Data based on scenario
         if (scenario == 1) {
-          dat <- generate.data(n = n.obs, p = p.vars, cont.prop = 0)
+          dat <- generate_data(n = n.obs, p = p.vars, cont.prop = 0)
         } else if (scenario == 2) {
-          dat <- generate.data(n = n.obs, p = p.vars, cont.prop = actual.cont, leverage = FALSE)
+          dat <- generate_data(n = n.obs, p = p.vars, cont.prop = actual.cont, leverage = FALSE)
         } else {
-          dat <- generate.data(n = n.obs, p = p.vars, cont.prop = actual.cont, leverage = TRUE)
+          dat <- generate_data(n = n.obs, p = p.vars, cont.prop = actual.cont, leverage = TRUE)
         }
         
         # A. Standard OLS
