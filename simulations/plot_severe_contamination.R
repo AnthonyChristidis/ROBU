@@ -15,7 +15,7 @@ if (!dir.exists("simulations/figures")) {
 }
 
 # 1. Load the data
-results_file <- "simulations/results/severe_contamination_35.rds"
+results_file <- "simulations/results/severe_contamination_eps0.35.rds"
 if(!file.exists(results_file)) {
   stop("Result file not found! Please run 'run_severe_contamination.R' first.")
 }
