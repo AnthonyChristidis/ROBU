@@ -20,8 +20,9 @@ set.seed(0)
 
 n.obs <- 1000
 p.vec <- c(100, 200, 400)
-n.reps <- 100
 cont.vec <- c(0.15, 0.35)   # Two contamination levels
+scenario.vec <- 1:3         # 1=Clean, 2=Vertical, 3=Leverage
+n.reps <- 100
 
 # Strict fairness control for both Standard MM and ROBU
 my.control <- lmrob.control(
@@ -100,40 +101,47 @@ for (p.vars in p.vec) {
   
   for (cont.level in cont.vec) {
     
-    # Initialize results storage for this specific P and Epsilon combination
-    results_file <- sprintf("simulations/results/sim_n%d_p%d_eps%.2f.rds", n.obs, p.vars, cont.level)
-    
-    results <- data.frame(
-      N = integer(),
-      P = integer(),
-      Contamination = numeric(),
-      Scenario = character(),
-      Rep = integer(),
-      Method = character(),
-      MSE = numeric(),
-      Time = numeric(),
-      S_Conv = logical(),
-      M_Conv = logical()
-    )
-    
-    cat("\n======================================================\n")
-    cat(sprintf("Starting Grid for p = %d | eps = %.2f\n", p.vars, cont.level))
-    cat(sprintf("Saved to: %s\n", results_file))
-    cat("======================================================\n")
-    
-    for (scenario in 1:3) {
+    for (scenario in scenario.vec) {
       
       # Skip redundant "Clean Data" runs (only need to run 0% contamination once per p)
       if (scenario == 1 && cont.level != cont.vec[1]) {
         next
       }
       
-      scenario.name <- switch(scenario,
+      # Setup scenario naming and actual contamination rate
+      scenario.name <- switch(as.character(scenario),
                               "1" = "Clean",
                               "2" = "Vertical Outliers",
                               "3" = "Leverage Points")
+                              
+      scenario.file.suffix <- switch(as.character(scenario),
+                                     "1" = "clean",
+                                     "2" = "vertical",
+                                     "3" = "leverage")
       
       actual.cont <- ifelse(scenario == 1, 0, cont.level)
+      
+      # Initialize results storage for this specific P, Epsilon, and Scenario
+      results_file <- sprintf("simulations/results/sim_n%d_p%d_eps%.2f_%s.rds", 
+                              n.obs, p.vars, actual.cont, scenario.file.suffix)
+      
+      results <- data.frame(
+        N = integer(),
+        P = integer(),
+        Contamination = numeric(),
+        Scenario = character(),
+        Rep = integer(),
+        Method = character(),
+        MSE = numeric(),
+        Time = numeric(),
+        S_Conv = logical(),
+        M_Conv = logical()
+      )
+      
+      cat("\n======================================================\n")
+      cat(sprintf("Starting Grid: p = %d | eps = %.2f | Scenario = %s\n", p.vars, actual.cont, scenario.name))
+      cat(sprintf("Saved to: %s\n", results_file))
+      cat("======================================================\n")
       
       for (rep in 1:n.reps) {
         
@@ -180,13 +188,12 @@ for (p.vars in p.vec) {
         
         results <- rbind(results, new_rows)
         
-        # Save intermediate results incrementally
+        # Save intermediate results incrementally for this specific file
         saveRDS(results, results_file)
         
       } # End Rep Loop
     } # End Scenario Loop
   } # End Contamination Loop
-  cat(sprintf("\nFinished all scenarios for p = %d.\n", p.vars))
 } # End P Loop
 
 cat("\nAll Simulations Complete!\n")
