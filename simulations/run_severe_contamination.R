@@ -33,14 +33,14 @@ results_file <- "simulations/results/severe_contamination_eps0.35.rds"
 # 2. Algorithmic Tuning 
 # ______________________
 
-# Standard MM Control: Budget of N_s = 2,500
+# Standard MM Control: Budget of N_s = 5,000
 # (Mathematically guaranteed to fail)
 ctrl_mm <- lmrob.control(
   method = "MM", 
   fast.s.large.n = Inf, 
   k.max = 200,           
   refine.tol = 1e-5,
-  nResample = 2500       # INFLATED BUDGET
+  nResample = 5000       # INFLATED BUDGET
 )
 
 # ROBU Control: Budget of N_s = 25,000 
@@ -77,10 +77,10 @@ for (rep in 1:n.reps) {
   dat <- generate_data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
   
   # _________________________
-  # Standard MM (Ns = 2500)
+  # Standard MM (Ns = 5000)
   # _________________________
 
-  cat("  -> Running Standard MM (Ns = 2500)... ")
+  cat("  -> Running Standard MM (Ns = 5000)... ")
   t_start <- proc.time()["elapsed"]
   fit_mm <- tryCatch({
     lmrob(dat$y ~ dat$x - 1, control = ctrl_mm)
