@@ -6,9 +6,9 @@ This repository contains the R implementation of the **ROBU** algorithm, as well
 
 ## Overview
 
-Standard high-breakdown robust regression methods (such as MM-estimators via the Fast-S algorithm) scale poorly as the number of predictors ($p$) grows large, frequently experiencing empirical breakdown or severe computational bottlenecks. 
+Standard high-breakdown robust regression methods (such as MM-estimators via the Fast-S algorithm) scale poorly as the number of predictors ($$p$$) grows large, frequently experiencing empirical breakdown or severe computational bottlenecks. 
 
-**ROBU** solves this by decoupling the predictors using orthogonalization (QR decomposition) and applying robust block-coordinate descent. This preserves the 50% breakdown point of the MM-estimator while reducing computation time by orders of magnitude for large $p$ (where $p < n$).
+**ROBU** solves this by decoupling the predictors using orthogonalization (QR decomposition) and applying robust block-coordinate descent. This preserves the 50% breakdown point of the MM-estimator while reducing computation time by orders of magnitude for large $$p$$ (where $$p < n$$).
 
 ## Dependencies
 The code relies on standard robust statistics packages in R. Please ensure the following are installed:
@@ -19,8 +19,8 @@ install.packages(c("robustbase", "RobStatTM", "mvnfast"))
 ## Repository Structure
 
 * **`R/`**: Contains the core algorithm functions (`robu.R` and `irwls.R`). These are all you need to apply ROBU to your own data.
-* **`simulations/`**: Contains the data generation functions and the scripts to reproduce the Monte Carlo simulation grid (computation time and MSE) presented in the paper.
-* **`application/`**: Contains the code for the real-world data application, including the artificial leverage point contamination and benchmarking.
+* **`simulations/`**: Contains the data generation functions, simulation scripts, and plotting scripts to reproduce the Monte Carlo simulation grid and Supplementary experiments.
+* **`application/`**: Contains the code and plotting scripts for the real-world data application, including the artificial leverage point contamination and benchmarking.
 
 ## Quick Start
 
@@ -56,6 +56,6 @@ To reproduce the numerical experiments from the manuscript:
 
 1. Navigate to the `simulations/` folder.
 2. Run `run_simulations.R` to execute the grid of scenarios comparing standard OLS, standard MM (`lmrob`), and ROBU.
-3. Run `run_k_sensitivity.R` to execute the block-size sensitivity analysis.
-4. Run `plot_simulations.R` and `plot_k_sensitivity.R` to generate the LaTeX tables and PDF figures.
+3. Run `run_k_sensitivity.R` to execute the block-size sensitivity analysis, and `run_severe_contamination.R` to evaluate the extreme 35% contamination regime (Supplementary Material).
+4. Run `plot_simulations.R`, `plot_k_sensitivity.R`, and `plot_severe_contamination.R` to generate the LaTeX tables and PDF figures.
 5. Navigate to the `application/` folder and run `run_application.R` followed by `plot_application.R` to reproduce the proteogenomics benchmark and figures.

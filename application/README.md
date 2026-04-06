@@ -1,10 +1,11 @@
 # Real Data Application: Proteogenomics
 
-This folder contains the scripts required to reproduce the real-world data analysis (Section 5) from the manuscript. The application predicts Estrogen Receptor Alpha (ER-$\alpha$) protein expression using high-dimensional RNA-seq transcriptomic data from the TCGA Breast Cancer (BRCA) dataset.
+This folder contains the scripts required to reproduce the real-world data analysis (Section 5) from the manuscript. The application predicts Estrogen Receptor Alpha (ER-$$\alpha$$) protein expression using high-dimensional RNA-seq transcriptomic data from the TCGA Breast Cancer (BRCA) dataset.
 
 ## Files
 
-* `run_real_data.R`: The master script for the application. It automatically downloads the matched RNA-seq and proteomic data, applies an unsupervised variance filter to retain $p=300$ genes, injects artificial concentrated leverage points into 15% of the patients, and benchmarks the algorithms.
+* `run_application.R`: The master script for the application. It automatically downloads the matched RNA-seq and proteomic data, applies an unsupervised variance filter to retain $$p=300$$ genes, injects artificial concentrated leverage points into 15% of the patients, and benchmarks the algorithms.
+* `plot_application.R`: Generates the side-by-side residuals plot comparing the Standard MM-estimator and ROBU.
 
 ## Dependencies
 
@@ -40,19 +41,11 @@ remotes::install_version("scales", version = "1.4.0")
 
 ## Usage
 
-Ensure your working directory is set to the root of the repository. You can source the script directly from your R console:
+Ensure your working directory is set to the root of the repository. You can source the scripts directly from your R console:
 
 ```R
-source("application/run_real_data.R")
+source("application/run_application.R")
+source("application/plot_application.R")
 ```
 
-*Note: Upon first execution, the script will create a `data/` folder and download the TCGA datasets (this may take a few minutes depending on your internet connection). Subsequent runs will load the data locally. Results and plot data will be saved to a `results/` sub-directory.*
-```
-
-
-
-
-
-
-
-
+*Note: Upon first execution, the script will create a `data/` folder and download the TCGA datasets (this may take a few minutes depending on your internet connection). Subsequent runs will load the data locally. Results and plot data will be saved to a `results/` sub-directory, and figures to `figures/`.*
