@@ -21,7 +21,7 @@ set.seed(0)
 n.obs <- 1000
 p.vars <- 400
 n.reps <- 50          # 50 reps is sufficient to show the trend
-cont.vec <- c(0.15, 0.35) # Run 15% first (to preserve RNG state), then 35%
+cont.vec <- c(0.15, 0.35) # Contamination levels to test (15% and 35%)
 
 # The grid of k values to test
 # k=1 (Unblocked), k=5 (Blocks of 80), k=10 (Blocks of 40), 
