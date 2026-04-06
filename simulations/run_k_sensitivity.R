@@ -21,7 +21,7 @@ set.seed(0)
 n.obs <- 1000
 p.vars <- 400
 n.reps <- 50          # 50 reps is sufficient to show the trend
-cont.level <- 0.15
+cont.vec <- c(0.15, 0.35) # Run 15% first (to preserve RNG state), then 35%
 
 # The grid of k values to test
 # k=1 (Unblocked), k=5 (Blocks of 80), k=10 (Blocks of 40), 
@@ -88,61 +88,70 @@ evaluate_robu_k <- function(x.dat, y.dat, k.val, beta.true) {
 
 cat("Starting k-Sensitivity Analysis...\n")
 cat("Fixed p = 400 | Scenario = Concentrated Bad Leverage Points\n")
-cat("Total Configurations:", length(k.vec) * n.reps, "\n\n")
+cat("Total Configurations:", length(k.vec) * n.reps * length(cont.vec), "\n\n")
 
-for (k.val in k.vec) {
+for (cont.level in cont.vec) {
   
-  block.size <- floor(p.vars / k.val)
+  cat(sprintf("\n******************************************************\n"))
+  cat(sprintf("   COMMENCING CONTAMINATION LEVEL: %.2f\n", cont.level))
+  cat(sprintf("******************************************************\n\n"))
   
-  # Initialize results storage for this specific k
-  # Using %03d adds leading zeros (e.g., k001, k020) so files sort perfectly in your folder
-  results_file <- sprintf("simulations/results/k_sensitivity_k%03d.rds", k.val)
-  
-  results <- data.frame(
-    K = integer(),
-    BlockSize = integer(),
-    Rep = integer(),
-    MSE = numeric(),
-    Time = numeric(),
-    S_Conv = logical(),    
-    M_Conv = logical()     
-  )
-  
-  cat("\n======================================================\n")
-  cat(sprintf("Starting Grid for k = %d (Block Size: %d)\n", k.val, block.size))
-  cat(sprintf("Saved to: %s\n", results_file))
-  cat("======================================================\n")
-  
-  for (rep in 1:n.reps) {
+  for (k.val in k.vec) {
     
-    cat(sprintf("Running: k = %-3d | Rep = %-3d \n", k.val, rep))
+    block.size <- floor(p.vars / k.val)
     
-    # Always generate Scenario 3 (Concentrated Leverage Points)
-    dat <- generate_data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
+    # Initialize results storage for this specific k and eps
+    # Files will look like: k_sensitivity_k020_eps0.15.rds
+    results_file <- sprintf("simulations/results/k_sensitivity_k%03d_eps%.2f.rds", k.val, cont.level)
     
-    # Run ROBU with the current k
-    res.robu <- evaluate_robu_k(dat$x, dat$y, k.val, dat$beta.true)
-    
-    # Bind Results
-    new_row <- data.frame(
-      K = k.val,
-      BlockSize = block.size,
-      Rep = rep,
-      MSE = res.robu$MSE,
-      Time = res.robu$Time,
-      S_Conv = res.robu$S_Conv,
-      M_Conv = res.robu$M_Conv
+    results <- data.frame(
+      K = integer(),
+      BlockSize = integer(),
+      Contamination = numeric(),
+      Rep = integer(),
+      MSE = numeric(),
+      Time = numeric(),
+      S_Conv = logical(),    
+      M_Conv = logical()     
     )
     
-    results <- rbind(results, new_row)
+    cat("\n======================================================\n")
+    cat(sprintf("Starting Grid for k = %d (Block Size: %d) | eps = %.2f\n", k.val, block.size, cont.level))
+    cat(sprintf("Saved to: %s\n", results_file))
+    cat("======================================================\n")
     
-    # Save intermediate results incrementally for this k
-    saveRDS(results, results_file)
+    for (rep in 1:n.reps) {
+      
+      cat(sprintf("Running: eps = %.2f | k = %-3d | Rep = %-3d \n", cont.level, k.val, rep))
+      
+      # Always generate Scenario 3 (Concentrated Leverage Points)
+      dat <- generate.data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
+      
+      # Run ROBU with the current k
+      res.robu <- evaluate_robu_k(dat$x, dat$y, k.val, dat$beta.true)
+      
+      # Bind Results
+      new_row <- data.frame(
+        K = k.val,
+        BlockSize = block.size,
+        Contamination = cont.level,
+        Rep = rep,
+        MSE = res.robu$MSE,
+        Time = res.robu$Time,
+        S_Conv = res.robu$S_Conv,
+        M_Conv = res.robu$M_Conv
+      )
+      
+      results <- rbind(results, new_row)
+      
+      # Save intermediate results incrementally for this k and eps
+      saveRDS(results, results_file)
+      
+    } # End Rep Loop
     
-  } # End Rep Loop
-  
-  cat(sprintf("Finished all reps for k = %d.\n", k.val))
-  
-} # End K Loop
+    cat(sprintf("Finished all reps for k = %d at eps = %.2f.\n", k.val, cont.level))
+    
+  } # End K Loop
+} # End Contamination Loop
 
 cat("\nSensitivity Analysis Complete!\n")

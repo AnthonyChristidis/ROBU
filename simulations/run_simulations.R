@@ -20,7 +20,7 @@ set.seed(0)
 
 n.obs <- 1000
 p.vec <- c(100, 200, 400)
-cont.vec <- c(0.15, 0.35)   # Two contamination levels
+cont.vec <- c(0.15)   
 scenario.vec <- 1:3         # 1=Clean, 2=Vertical, 3=Leverage
 n.reps <- 100
 
