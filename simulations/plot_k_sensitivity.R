@@ -56,7 +56,7 @@ pub_theme <- theme_classic(base_size = 14) +
   )
 
 # Loop through both contamination levels to generate Main Text and Supp plots
-for (eps in c(0.15, 0.35)) {
+for (eps in c(0.15)) {
   
   cat(sprintf("Generating plot for epsilon = %.2f...\n", eps))
   
@@ -96,7 +96,7 @@ for (eps in c(0.15, 0.35)) {
   
   # Name the file based on the contamination level (matches your LaTeX refs perfectly)
   if (eps == 0.15) {
-    plot_file <- "simulations/figures/k_sensitivity_plot.pdf"
+    plot_file <- "simulations/figures/k_sensitivity_plot_15.pdf"
   } else {
     plot_file <- "simulations/figures/k_sensitivity_plot_35.pdf"
   }
