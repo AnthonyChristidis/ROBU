@@ -19,7 +19,7 @@ source("simulations/generate_data.R")
 set.seed(0) 
 
 n.obs <- 1000
-p.vars <- 400
+p.vars <- 200        
 n.reps <- 50         # 50 reps is enough to definitively show the breakdown/recovery
 cont.level <- 0.35   # 35% Severe Contamination
 
@@ -34,7 +34,7 @@ results_file <- "simulations/results/severe_contamination_eps0.35.rds"
 # ______________________
 
 # Standard MM Control: Budget of N_s = 2,500
-# (Takes ~425 seconds, mathematically guaranteed to fail)
+# (Mathematically guaranteed to fail)
 ctrl_mm <- lmrob.control(
   method = "MM", 
   fast.s.large.n = Inf, 
@@ -44,7 +44,7 @@ ctrl_mm <- lmrob.control(
 )
 
 # ROBU Control: Budget of N_s = 25,000 
-# (Takes ~120 seconds, mathematically guaranteed to succeed at k=20)
+# (Mathematically guaranteed to succeed at k=10, since block size is 20)
 ctrl_robu <- lmrob.control(
   method = "MM", 
   fast.s.large.n = Inf, 
@@ -79,6 +79,7 @@ for (rep in 1:n.reps) {
   # _________________________
   # Standard MM (Ns = 2500)
   # _________________________
+
   cat("  -> Running Standard MM (Ns = 2500)... ")
   t_start <- proc.time()["elapsed"]
   fit_mm <- tryCatch({
@@ -93,12 +94,13 @@ for (rep in 1:n.reps) {
   results <- rbind(results, data.frame(Method="Standard MM", Rep=rep, MSE=mse_mm, Time=time_mm))
   
   # ___________________________
-  # ROBU (k = 20, Ns = 25000)
+  # ROBU (k = 10, Ns = 25000)
   # ___________________________
-  cat("  -> Running ROBU (k = 20, Ns = 25000)... ")
+
+  cat("  -> Running ROBU (k = 10, Ns = 25000)... ")
   t_start <- proc.time()["elapsed"]
   fit_robu <- tryCatch({
-    suppressWarnings(robu(x = dat$x, y = dat$y, k = 20, robu.control = ctrl_robu, m.control = ctrl_robu))
+    suppressWarnings(robu(x = dat$x, y = dat$y, k = 10, robu.control = ctrl_robu, m.control = ctrl_robu))
   }, error = function(e) list(coefficients = rep(NA, p.vars)))
   t_end <- proc.time()["elapsed"]
   
