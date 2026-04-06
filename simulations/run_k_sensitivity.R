@@ -125,7 +125,7 @@ for (cont.level in cont.vec) {
       cat(sprintf("Running: eps = %.2f | k = %-3d | Rep = %-3d \n", cont.level, k.val, rep))
       
       # Always generate Scenario 3 (Concentrated Leverage Points)
-      dat <- generate.data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
+      dat <- generate_data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
       
       # Run ROBU with the current k
       res.robu <- evaluate_robu_k(dat$x, dat$y, k.val, dat$beta.true)
