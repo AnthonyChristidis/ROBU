@@ -56,6 +56,6 @@ To reproduce the numerical experiments from the manuscript:
 
 1. Navigate to the `simulations/` folder.
 2. Run `run_simulations.R` to execute the grid of scenarios comparing standard OLS, standard MM (`lmrob`), and ROBU.
-3. Run `run_k_sensitivity.R` to execute the block-size sensitivity analysis, and `run_severe_contamination.R` to evaluate the extreme 35% contamination regime (Supplementary Material).
-4. Run `plot_simulations.R`, `plot_k_sensitivity.R`, and `plot_severe_contamination.R` to generate the LaTeX tables and PDF figures.
+3. Run `run_k_sensitivity.R` to execute the block-size sensitivity analysis.
+4. Run `plot_simulations.R` and `plot_k_sensitivity.R` to generate the LaTeX tables and PDF figures.
 5. Navigate to the `application/` folder and run `run_application.R` followed by `plot_application.R` to reproduce the proteogenomics benchmark and figures.
