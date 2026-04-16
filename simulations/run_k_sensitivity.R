@@ -12,27 +12,30 @@ source("R/irwls.R")
 source("R/robu.R")
 source("simulations/generate_data.R")
 
-# __________________________________________________
-# 1. Simulation Parameters (Matched to Section S5)
-# __________________________________________________
+# _________________________
+# 1. Simulation Parameters 
+# _________________________
 
 set.seed(0)
 
 n.obs <- 1000
 p.vars <- 400
 n.reps <- 50          # 50 reps is sufficient to show the trend
-cont.vec <- c(0.15) # Contamination level
+cont.vec <- c(0.20)   # Updated to 0.20 to align with new main simulation grid
 
 # The grid of k values to test
 # k=1 (Unblocked), k=5 (Blocks of 80), k=10 (Blocks of 40), 
 # k=20 (Blocks of 20), k=40 (Blocks of 10), k=100 (Blocks of 4), k=400 (Univariate)
 k.vec <- c(1, 5, 10, 20, 40, 100, 400)
 
-# Strict fairness control 
+# Strict fairness control: Give it the massive budget so k=1 (Standard MM) has a fair fight
 my.control <- lmrob.control(
   method = "MM", 
   fast.s.large.n = Inf, 
-  k.max = 200,           
+  k.max = 5000,          # Massive budget for p=400
+  k.m_s = 2000,
+  max.it = 1000,
+  nResample = 5000,      # Massive budget for p=400
   refine.tol = 1e-5      
 )
 
@@ -41,8 +44,8 @@ if (!dir.exists("simulations/results")) {
   dir.create("simulations/results", recursive = TRUE)
 }
 
-# Helper function to evaluate method and silently catch warnings
-evaluate_robu_k <- function(x.dat, y.dat, k.val, beta.true) {
+# Helper function to evaluate method, silently catch warnings, and track outlier detection
+evaluate_robu_k <- function(x.dat, y.dat, k.val, beta.true, out.ind) {
   s_conv <- TRUE
   m_conv <- TRUE
   
@@ -72,13 +75,30 @@ evaluate_robu_k <- function(x.dat, y.dat, k.val, beta.true) {
   end_time <- proc.time()["elapsed"]
   time_elapsed <- end_time - start_time
   
-  mse <- mean((fit$coefficients - beta.true)^2)
+  # MSE: strictly the squared norm (sum of squared errors)
+  mse <- sum((fit$coefficients - beta.true)^2)
+  
+  # Outlier Detection Tracking
+  wt <- fit$rweights
+  if (is.null(wt)) wt <- fit$weights # fallback
+  
+  if (!is.null(wt) && length(wt) == length(out.ind)) {
+    is_detected <- wt < 0.5
+    is_actual <- out.ind == 1
+    tp <- sum(is_detected & is_actual)
+    fp <- sum(is_detected & !is_actual)
+  } else {
+    tp <- NA
+    fp <- NA
+  }
   
   return(list(
     MSE = mse,
     Time = unname(time_elapsed),
     S_Conv = s_conv,
-    M_Conv = m_conv
+    M_Conv = m_conv,
+    TP = tp,
+    FP = fp
   ))
 }
 
@@ -101,7 +121,6 @@ for (cont.level in cont.vec) {
     block.size <- floor(p.vars / k.val)
     
     # Initialize results storage for this specific k and eps
-    # Files will look like: k_sensitivity_k020_eps0.15.rds
     results_file <- sprintf("simulations/results/k_sensitivity_k%03d_eps%.2f.rds", k.val, cont.level)
     
     results <- data.frame(
@@ -112,7 +131,9 @@ for (cont.level in cont.vec) {
       MSE = numeric(),
       Time = numeric(),
       S_Conv = logical(),    
-      M_Conv = logical()     
+      M_Conv = logical(),
+      TP = integer(),
+      FP = integer()
     )
     
     cat("\n======================================================\n")
@@ -128,7 +149,7 @@ for (cont.level in cont.vec) {
       dat <- generate_data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
       
       # Run ROBU with the current k
-      res.robu <- evaluate_robu_k(dat$x, dat$y, k.val, dat$beta.true)
+      res.robu <- evaluate_robu_k(dat$x, dat$y, k.val, dat$beta.true, dat$out.ind)
       
       # Bind Results
       new_row <- data.frame(
@@ -139,7 +160,9 @@ for (cont.level in cont.vec) {
         MSE = res.robu$MSE,
         Time = res.robu$Time,
         S_Conv = res.robu$S_Conv,
-        M_Conv = res.robu$M_Conv
+        M_Conv = res.robu$M_Conv,
+        TP = res.robu$TP,
+        FP = res.robu$FP
       )
       
       results <- rbind(results, new_row)
