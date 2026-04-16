@@ -8,6 +8,8 @@
 #'                 If FALSE, generates vertical outliers only.
 #' @param rho Correlation between variables within the same block.
 #' @param cov.blocks Number of blocks for the correlation structure.
+#' @param outlier.mu Mean of the concentrated leverage points (default 10 for "sneaky" outliers).
+#' @param outlier.sd SD of the concentrated leverage points (default 1).
 #'
 #' @return A list containing x, y, beta.true, and out.ind (outlier indicators).
 #' 
@@ -16,7 +18,8 @@
 library(mvnfast)
 
 generate_data <- function(n = 1000, p = 200, snr = 3, cont.prop = 0.15, 
-                          leverage = TRUE, rho = 0.5, cov.blocks = 10) {
+                          leverage = TRUE, rho = 0.5, cov.blocks = 10,
+                          outlier.mu = 10, outlier.sd = 1) {
   
   # ____________________________________
   # Step 1: Block-Correlation Structure
@@ -62,10 +65,14 @@ generate_data <- function(n = 1000, p = 200, snr = 3, cont.prop = 0.15,
     if (leverage) {
       # CONCENTRATED BAD LEVERAGE POINTS (Scenario 3)
       x.cont <- mvnfast::rmvn(n = n.cont, mu = rep(0, p), sigma = sigma.mat)
-      p.bad <- max(1, floor(p * 0.1)) # Corrupt the first 10% of variables
+      p.bad <- max(1, floor(p * 0.1)) # Corrupt 10% of variables
       
-      shift.mat <- mvnfast::rmvn(n = n.cont, mu = rep(100, p.bad), sigma = diag(10^2, p.bad))
-      x.cont[, 1:p.bad] <- x.cont[, 1:p.bad] + shift.mat
+      # Randomly select which variables are contaminated to avoid block-alignment artifacts
+      bad.vars <- sample(1:p, p.bad)
+      
+      # Use sneakier outliers N(10, 1) as suggested by Matias
+      shift.mat <- mvnfast::rmvn(n = n.cont, mu = rep(outlier.mu, p.bad), sigma = diag(outlier.sd^2, p.bad))
+      x.cont[, bad.vars] <- x.cont[, bad.vars] + shift.mat
       
       beta.bad <- rnorm(p, mean = -5, sd = 2)
       y.cont <- x.cont %*% beta.bad + rnorm(n.cont, mean = 0, sd = sd.error)
