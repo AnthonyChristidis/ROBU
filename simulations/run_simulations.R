@@ -22,7 +22,7 @@ n.obs <- 1000
 p.vec <- c(100, 200, 400)
 cont.vec <- c(0.10, 0.20, 0.30)   # Expanded epsilons
 scenario.vec <- 1:3               # 1=Clean, 2=Vertical, 3=Leverage
-n.reps <- 100
+n.reps <- 50
 
 # Create results directory if it doesn't exist
 if (!dir.exists("simulations/results")) {
