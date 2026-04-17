@@ -6,7 +6,7 @@
 #' @param robu.control Settings for the block updates (from lmrob.control).
 #' @param m.control Settings for the final M-estimate (from lmrob.control).
 #'
-#' @return A list containing the final coefficients, scale, residuals, and intermediate estimates.
+#' @return A list containing the final coefficients, scale, residuals, intermediate estimates, and robust weights.
 #' 
 #' @export
 #' 
@@ -116,6 +116,7 @@ robu <- function(x, y, k = max(1, floor(ncol(x) / 50)), robu.control, m.control)
     scale.initial = robu.scale.init,
     residuals = robu.final$residuals, 
     scale.s = robu.scale.s,
-    s.coefficients = robu.s.coefficients
+    s.coefficients = robu.s.coefficients,
+    rweights = robu.final$rweights
   ))
 }
