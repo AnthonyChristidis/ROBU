@@ -3,7 +3,7 @@
 # ----------------------------------------------------------------
 
 library(ggplot2)
-library(xtable)
+library(dplyr)
 library(tidyr) 
 library(scales) 
 
@@ -17,35 +17,33 @@ table_data <- readRDS("application/results/tcga_performance_table.rds")
 plot_data <- readRDS("application/results/tcga_residuals_plotdata.rds")
 
 # ________________________
-# 2. Generate LaTeX Table 
+# 2. Print Summary Table 
 # ________________________
 
-cat("\n--- LaTeX Table Code ---\n")
+cat("\n--- Application Table Data ---\n")
 
-# Reorder factor levels so Baseline OLS is first, then Standard MM, Det MM, then ROBU
+# Reorder factor levels
 table_data$Method <- factor(table_data$Method, levels = c("OLS", "Standard MM", "Deterministic MM", "ROBU"))
 table_data <- table_data[order(table_data$Method), ]
 
 # Format numbers
-table_data$Time <- sprintf("%.2f", table_data$Time)
-table_data$MSE <- sprintf("%.2f", table_data$MSE) 
-table_data$TP <- sprintf("%.1f", table_data$TP)
-table_data$FP <- sprintf("%.1f", table_data$FP)
+table_data <- table_data |>
+  mutate(
+    Time = sprintf("%.2f", Time),
+    MSE = sprintf("%.2f", MSE),
+    TP = sprintf("%.1f", TP),
+    FP = sprintf("%.1f", FP)
+  )
 
 # Fix NAs for OLS
 table_data$TP[table_data$Method == "OLS"] <- "--"
 table_data$FP[table_data$Method == "OLS"] <- "--"
 
-colnames(table_data) <- c("Method", "Time (s)", "MSE (vs. Baseline)", "TP", "FP")
+# Order columns exactly as requested: Method, MSE, FP, TP, Time
+table_data <- table_data |> select(Method, MSE, FP, TP, Time)
 
-latex_table <- xtable(
-  table_data, 
-  caption = "Performance of estimators on the TCGA breast cancer proteogenomics dataset. Results are averaged over 50 replications with 15\\% artificial adversarial contamination.",
-  label = "tab:real_data",
-  align = c("l", "l", "c", "c", "c", "c")
-)
-
-print(latex_table, include.rownames = FALSE, caption.placement = "top", booktabs = TRUE)
+# Print cleanly to console
+print(as.data.frame(table_data), row.names = FALSE)
 
 # ____________________________________________
 # 3. Generate Two-Panel Residuals Scatterplot
