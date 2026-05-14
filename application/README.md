@@ -5,7 +5,7 @@ This folder contains the scripts required to reproduce the real-world data analy
 ## Files
 
 * `run_application.R`: The master script for the application. It automatically downloads the matched RNA-seq and proteomic data, applies an unsupervised variance filter to retain $$p=300$$ genes, injects artificial concentrated leverage points into 15% of the patients, and benchmarks the algorithms.
-* `plot_application.R`: Generates the side-by-side residuals plot comparing the Standard MM-estimator and ROBU.
+* `generate_application_outputs.R`: Generates the side-by-side residuals plot comparing the Standard MM-estimator and ROBU.
 
 ## Dependencies
 
@@ -45,7 +45,7 @@ Ensure your working directory is set to the root of the repository. You can sour
 
 ```R
 source("application/run_application.R")
-source("application/plot_application.R")
+source("application/generate_application_outputs.R")
 ```
 
 *Note: Upon first execution, the script will create a `data/` folder and download the TCGA datasets (this may take a few minutes depending on your internet connection). Subsequent runs will load the data locally. Results and plot data will be saved to a `results/` sub-directory, and figures to `figures/`.*
