@@ -21,55 +21,63 @@ results <- bind_rows(lapply(result_files, readRDS)) |> distinct()
 results$Method <- ifelse(results$Method == "OLS", "Standard OLS", as.character(results$Method))
 
 # Ensure factors are ordered logically
-results$Method <- factor(results$Method, levels = c("Standard OLS", "Standard MM", "ROBU"))
+results$Method <- factor(results$Method, levels = c("Standard OLS", "Standard MM", "Deterministic MM", "ROBU"))
 results$Scenario <- factor(results$Scenario, levels = c("Clean", "Vertical Outliers", "Leverage Points"))
 
-# Filter to ONLY 0% and 15% contamination for the main manuscript
-results_main <- results |> filter(Contamination %in% c(0, 0.15))
-
 # _______________________________________________________
-# 2. Generate Master LaTeX Table (MSE Only, 15% Contam)
+# 2. Generate Master LaTeX Table (Leverage Points Only)
 # _______________________________________________________
 
 cat("\n--- Generating LaTeX Table ---\n")
 
-# Aggregate results (Mean MSE)
-summary_table <- results_main |>
-  group_by(Scenario, Method, P) |>
+# Filter to only Leverage Points for the main text table
+table_data <- results |> 
+  filter(Scenario == "Leverage Points") |>
+  group_by(P, Method, Contamination) |>
   summarize(
-    Mean_MSE = mean(MSE, na.rm = TRUE),
+    MSE = mean(MSE, na.rm = TRUE),
+    Time = mean(Time, na.rm = TRUE),
+    TP = mean(TP, na.rm = TRUE),
+    FP = mean(FP, na.rm = TRUE),
     .groups = "drop"
   )
 
-# Format the metrics: Drop decimals and add commas if > 100, else keep 2 decimals
-summary_table <- summary_table |>
+# Format the metrics
+table_data <- table_data |>
   mutate(
-    Formatted = ifelse(Mean_MSE > 100, 
-                       formatC(round(Mean_MSE), format = "f", big.mark = ",", digits = 0), 
-                       sprintf("%.2f", Mean_MSE))
+    MSE = ifelse(MSE > 1000, formatC(round(MSE), format = "f", big.mark = ",", digits = 0), sprintf("%.2f", MSE)),
+    Time = sprintf("%.2f", Time),
+    TP = ifelse(is.na(TP), "--", sprintf("%.1f", TP)),
+    FP = ifelse(is.na(FP), "--", sprintf("%.1f", FP))
+  )
+
+# Pivot wider so that Contamination = 0.10, 0.20, 0.30 become columns
+table_wide <- table_data |>
+  pivot_wider(
+    names_from = Contamination, 
+    values_from = c(MSE, TP, FP, Time),
+    names_glue = "{.value}_{Contamination}"
   ) |>
-  select(Scenario, Method, P, Formatted)
+  arrange(P, Method)
 
-# Pivot wider so that P = 100, 200, 400 become columns
-table_wide <- summary_table |>
-  pivot_wider(names_from = P, values_from = Formatted, names_prefix = "p_") |>
-  arrange(Scenario, Method)
-
-# Clean up Scenario labels for the LaTeX table
-table_wide$Scenario <- as.character(table_wide$Scenario)
-table_wide$Scenario[table_wide$Scenario == "Clean"] <- "\\textbf{Clean Data} (0\\% Contam.)"
-table_wide$Scenario[table_wide$Scenario == "Vertical Outliers"] <- "\\textbf{Vertical Outliers} (15\\% Contam.)"
-table_wide$Scenario[table_wide$Scenario == "Leverage Points"] <- "\\textbf{Leverage Points} (15\\% Contam.)"
+# Reorder columns to match: P, Method, (MSE, TP, FP, Time) for 0.10, 0.20, 0.30
+table_wide <- table_wide |>
+  select(P, Method, 
+         MSE_0.1, TP_0.1, FP_0.1, Time_0.1,
+         MSE_0.2, TP_0.2, FP_0.2, Time_0.2,
+         MSE_0.3, TP_0.3, FP_0.3, Time_0.3)
 
 # Rename columns for xtable
-colnames(table_wide) <- c("\\textbf{Scenario}", "\\textbf{Method}", 
-                          "\\textbf{\\boldmath $p=100$}", "\\textbf{\\boldmath $p=200$}", "\\textbf{\\boldmath $p=400$}")
+colnames(table_wide) <- c("$\\boldsymbol{p}$", "\\textbf{Method}", 
+                          "\\textbf{MSE}", "\\textbf{TP}", "\\textbf{FP}", "\\textbf{Time}",
+                          "\\textbf{MSE}", "\\textbf{TP}", "\\textbf{FP}", "\\textbf{Time}",
+                          "\\textbf{MSE}", "\\textbf{TP}", "\\textbf{FP}", "\\textbf{Time}")
 
 latex_xtable <- xtable(
   table_wide, 
-  caption = "Average Mean Squared Error (MSE) across 100 replications. Results highlight the empirical breakdown of the Standard MM-estimator at $p=400$, and the successful signal recovery by ROBU under 15\\% contamination.",
-  label = "tab:sim_mse",
-  align = c("l", "l", "l", "r", "r", "r") # Left align text, Right align numbers
+  caption = "Average performance metrics under Scenario 3 (Adversarial Leverage Points) across 50 replications. True Positives (TP) and False Positives (FP) indicate the average number of observations trimmed by the robust estimators.",
+  label = "tab:sim_leverage",
+  align = c("l", "l", "l",  "c","c","c","c",  "c","c","c","c",  "c","c","c","c")
 )
 
 print(latex_xtable, include.rownames = FALSE, sanitize.text.function = identity, 
@@ -77,21 +85,15 @@ print(latex_xtable, include.rownames = FALSE, sanitize.text.function = identity,
 
 
 # _________________________________________________
-# 3. Generate Two-Panel Figure (Time and MSE vs p)
+# 3. Generate Two-Panel Figure (Boxplots)
 # _________________________________________________
 
 cat("\n--- Generating PDF Plots ---\n")
 
-# We will focus the plot on the most critical scenario: 15% Bad Leverage Points
-# This perfectly illustrates the empirical breakdown transition.
-plot_data <- results_main |>
-  filter(Scenario == "Leverage Points") |>
-  group_by(Method, P) |>
-  summarize(
-    Mean_Time = mean(Time, na.rm = TRUE),
-    Mean_MSE = mean(MSE, na.rm = TRUE),
-    .groups = "drop"
-  )
+# Filter raw data for boxplots (Fixing epsilon at 0.20 to show scaling behavior)
+plot_data <- results |>
+  filter(Scenario == "Leverage Points", Contamination == 0.20) |>
+  mutate(P_factor = factor(P)) # Convert P to factor so boxplots group correctly by x-axis
 
 # Professional Academic Theme
 pub_theme <- theme_classic(base_size = 14) +
@@ -105,40 +107,38 @@ pub_theme <- theme_classic(base_size = 14) +
     axis.line = element_line(color = "black", linewidth = 0.5)
   )
 
-# Custom color palette
-method_colors <- c("Standard OLS" = "#969696", "Standard MM" = "#D7191C", "ROBU" = "#2C7BB6")
-method_shapes <- c("Standard OLS" = 15, "Standard MM" = 17, "ROBU" = 16)
+# Custom color palette for boxplot fills
+method_fills <- c("Standard OLS" = "#f0f0f0", "Standard MM" = "#Fcae91", 
+                  "Deterministic MM" = "#bae4b3", "ROBU" = "#bdd7e7")
+method_colors <- c("Standard OLS" = "#969696", "Standard MM" = "#D7191C", 
+                   "Deterministic MM" = "#31a354", "ROBU" = "#2C7BB6")
 
-# A. Left Panel: Computation Time vs P
-p_time <- ggplot(plot_data |> filter(Method != "Standard OLS"), # OLS is too fast/irrelevant for time comparison
-                 aes(x = P, y = Mean_Time, color = Method, shape = Method, group = Method)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3.5) +
+# A. Left Panel: Computation Time vs P (Boxplots)
+p_time <- ggplot(plot_data |> filter(Method != "Standard OLS"), 
+                 aes(x = P_factor, y = Time, fill = Method, color = Method)) +
+  geom_boxplot(alpha = 0.7, outlier.size = 1.5, position = position_dodge(0.8)) +
+  scale_fill_manual(values = method_fills) +
   scale_color_manual(values = method_colors) +
-  scale_shape_manual(values = method_shapes) +
-  scale_x_continuous(breaks = c(100, 200, 400)) +
   labs(
     x = "Number of Predictors (p)",
-    y = "Average Computation Time (Seconds)",
+    y = "Computation Time (Seconds)",
     title = "Computational Scaling"
   ) +
   pub_theme
 
-# B. Right Panel: MSE vs P
-p_mse <- ggplot(plot_data, aes(x = P, y = Mean_MSE, color = Method, shape = Method, group = Method)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3.5) +
+# B. Right Panel: MSE vs P (Boxplots)
+p_mse <- ggplot(plot_data, aes(x = P_factor, y = MSE, fill = Method, color = Method)) +
+  geom_boxplot(alpha = 0.7, outlier.size = 1.5, position = position_dodge(0.8)) +
   scale_y_log10(
     labels = scales::label_number(accuracy = 0.1, big.mark = ","),
-    breaks = c(0.1, 1, 10, 100, 1000)
+    breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5)
   ) +
+  scale_fill_manual(values = method_fills) +
   scale_color_manual(values = method_colors) +
-  scale_shape_manual(values = method_shapes) +
-  scale_x_continuous(breaks = c(100, 200, 400)) +
   labs(
     x = "Number of Predictors (p)",
     y = "Mean Squared Error (Log Scale)",
-    title = "Empirical Breakdown Resistance"
+    title = "Algorithmic Failure Resistance"
   ) +
   pub_theme
 
