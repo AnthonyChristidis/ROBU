@@ -14,11 +14,10 @@ if (!dir.exists("simulations/figures")) {
   dir.create("simulations/figures", recursive = TRUE)
 }
 
-# 1. Load the data (This regex grabs both 0.15 and 0.35 files)
+# 1. Load the data 
 result_files <- list.files("simulations/results", pattern = "k_sensitivity_k.*\\.rds$", full.names = TRUE)
-if(length(result_files) == 0) {
-  result_files <- "simulations/results/k_sensitivity_results.rds"
-}
+if(length(result_files) == 0) stop("No sensitivity simulation files found! Check the directory.")
+
 results <- bind_rows(lapply(result_files, readRDS)) |> distinct() 
 
 results$K_factor <- as.factor(results$K)
@@ -55,55 +54,49 @@ pub_theme <- theme_classic(base_size = 14) +
     axis.line = element_line(color = "black", linewidth = 0.5)
   )
 
-# Loop through both contamination levels to generate Main Text and Supp plots
-for (eps in c(0.15)) {
-  
-  cat(sprintf("Generating plot for epsilon = %.2f...\n", eps))
-  
-  # Filter data for current contamination level
-  plot_data <- results |> filter(Contamination == eps)
-  
-  # B. Plot Time vs K (Left Panel - Professional Blue)
-  p_time <- ggplot(plot_data, aes(x = K_factor, y = Time)) +
-    geom_boxplot(fill = "#E0F3F8", color = "#313695", outlier.shape = NA, width = 0.6, linewidth = 0.6) +
-    geom_jitter(width = 0.15, alpha = 0.6, size = 1.5, color = "#313695", shape = 16) +
-    scale_x_discrete(labels = x_labels) +
-    labs(
-      x = "Number of Blocks (k)",
-      y = "Computation Time (Seconds)",
-      title = "Computational Scaling"
-    ) +
-    pub_theme
-  
-  # C. Plot MSE vs K (Right Panel - Okabe-Ito Vermilion/Rust)
-  p_mse <- ggplot(plot_data, aes(x = K_factor, y = MSE)) +
-    geom_boxplot(fill = "#FDDBC7", color = "#D55E00", outlier.shape = NA, width = 0.6, linewidth = 0.6) +
-    geom_jitter(width = 0.15, alpha = 0.6, size = 1.5, color = "#D55E00", shape = 16) +
-    scale_y_log10(
-      labels = scales::label_number(accuracy = 0.1, big.mark = ","),
-      breaks = c(0.1, 1, 10, 100, 1000)
-    ) +
-    scale_x_discrete(labels = x_labels) +
-    labs(
-      x = "Number of Blocks (k)",
-      y = "Mean Squared Error (Log Scale)",
-      title = "Empirical Breakdown Resistance"
-    ) +
-    pub_theme
-  
-  # Combine the two plots side-by-side
-  combined_plot <- grid.arrange(p_time, p_mse, ncol = 2)
-  
-  # Name the file based on the contamination level (matches your LaTeX refs perfectly)
-  if (eps == 0.15) {
-    plot_file <- "simulations/figures/k_sensitivity_plot_15.pdf"
-  } else {
-    plot_file <- "simulations/figures/k_sensitivity_plot_35.pdf"
-  }
-  
-  # Save to PDF
-  ggsave(filename = plot_file, plot = combined_plot, width = 12, height = 5.5, dpi = 300)
-  cat(sprintf("Saved: %s\n", plot_file))
-}
+# Set epsilon target (Updated to 0.20 to match new main grid)
+eps <- 0.20
+cat(sprintf("Generating plot for epsilon = %.2f...\n", eps))
+
+# Filter data for current contamination level
+plot_data <- results |> filter(Contamination == eps)
+
+# A. Plot Time vs K (Left Panel - Professional Blue)
+p_time <- ggplot(plot_data, aes(x = K_factor, y = Time)) +
+  geom_boxplot(fill = "#E0F3F8", color = "#313695", outlier.shape = NA, width = 0.6, linewidth = 0.6) +
+  geom_jitter(width = 0.15, alpha = 0.6, size = 1.5, color = "#313695", shape = 16) +
+  scale_x_discrete(labels = x_labels) +
+  labs(
+    x = "Number of Blocks (k)",
+    y = "Computation Time (Seconds)",
+    title = "Computational Scaling"
+  ) +
+  pub_theme
+
+# B. Plot MSE vs K (Right Panel - Okabe-Ito Vermilion/Rust)
+p_mse <- ggplot(plot_data, aes(x = K_factor, y = MSE)) +
+  geom_boxplot(fill = "#FDDBC7", color = "#D55E00", outlier.shape = NA, width = 0.6, linewidth = 0.6) +
+  geom_jitter(width = 0.15, alpha = 0.6, size = 1.5, color = "#D55E00", shape = 16) +
+  scale_y_log10(
+    labels = scales::label_number(accuracy = 0.1, big.mark = ","),
+    breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5)
+  ) +
+  scale_x_discrete(labels = x_labels) +
+  labs(
+    x = "Number of Blocks (k)",
+    y = "Mean Squared Error (Log Scale)",
+    title = "Algorithmic Failure Resistance"
+  ) +
+  pub_theme
+
+# Combine the two plots side-by-side
+combined_plot <- grid.arrange(p_time, p_mse, ncol = 2)
+
+# Save to PDF (Updated name to match epsilon 0.20)
+plot_file <- "simulations/figures/k_sensitivity_plot_20.pdf"
+
+# Save to PDF
+ggsave(filename = plot_file, plot = combined_plot, width = 12, height = 5.5, dpi = 300)
+cat(sprintf("Saved: %s\n", plot_file))
 
 cat("\nAll Sensitivity plots successfully generated!\n")
