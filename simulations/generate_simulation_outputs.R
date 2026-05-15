@@ -5,12 +5,15 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(patchwork) # Replaces gridExtra
+library(patchwork) 
 library(scales)
 
 cat("\n--- Generating Main Simulation Results ---\n")
 
+# __________________________________
 # 1. Load all simulation .rds files
+# __________________________________
+
 result_files <- list.files("simulations/results", pattern = "sim_n1000_p.*\\.rds$", full.names = TRUE)
 if (length(result_files) == 0) stop("No simulation files found! Check the directory.")
 
@@ -23,9 +26,9 @@ results$Method <- ifelse(results$Method == "OLS", "Standard OLS", as.character(r
 results$Method <- factor(results$Method, levels = c("Standard OLS", "Standard MM", "Deterministic MM", "ROBU"))
 results$Scenario <- factor(results$Scenario, levels = c("Clean", "Vertical Outliers", "Leverage Points"))
 
-# _______________________________________________________
+# __________________________________
 # 2. Aggregate and Format the Data
-# _______________________________________________________
+# __________________________________
 
 # Aggregate means and format strings globally (No TP/FP/Conv needed for tables)
 agg_data <- results |>
@@ -36,8 +39,11 @@ agg_data <- results |>
     .groups = "drop"
   ) |>
   mutate(
-    MSE_fmt = ifelse(MSE > 1000, formatC(round(MSE), format = "f", big.mark = ",", digits = 0), sprintf("%.2f", MSE)),
-    Time_fmt = sprintf("%.2f", Time)
+    # Enforce exactly 1 decimal place globally for perfect LaTeX column alignment
+    MSE_fmt = ifelse(MSE > 1000, 
+                     formatC(round(MSE, 1), format = "f", big.mark = ",", digits = 1), 
+                     sprintf("%.1f", MSE)),
+    Time_fmt = sprintf("%.1f", Time)
   )
 
 # _______________________________________________________
@@ -72,9 +78,9 @@ table1_main <- left_join(clean_df, lev_df, by = c("P", "Method")) |> arrange(P, 
 print(as.data.frame(table1_main), row.names = FALSE)
 
 
-# _______________________________________________________
+# __________________________________________________
 # 4. Build Table S1 (Supplement: Vertical Outliers)
-# _______________________________________________________
+# __________________________________________________
 
 cat("\n--- Table S1 Data (Vertical Outliers) ---\n")
 
@@ -97,7 +103,7 @@ print(as.data.frame(table_supp), row.names = FALSE)
 
 
 # _________________________________________________
-# 5. Generate Two-Panel Figure (Line + Boxplots)
+# 5. Generate Two-Panel Figure (Boxplots + Line)
 # _________________________________________________
 
 cat("\n--- Generating PDF Plots ---\n")
@@ -122,28 +128,14 @@ method_shapes <- c("Standard OLS" = 15, "Standard MM" = 17, "Deterministic MM" =
 # Universal Theme
 pub_theme <- theme_classic(base_size = 14) +
   theme(
-    plot.title = element_blank(), # Removed titles for academic formatting
+    plot.title = element_blank(), 
     axis.title = element_text(face = "bold", size = 12),
     axis.text = element_text(color = "black", size = 11),
     panel.grid.major.y = element_line(color = "gray85", linewidth = 0.5, linetype = "dashed"),
     axis.line = element_line(color = "black", linewidth = 0.6)
   )
 
-# B. Left Panel: Computation Time vs P (Line Plot)
-p_time <- ggplot(plot_data_line, aes(x = P, y = Mean_Time, color = Method, shape = Method)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3.5) +
-  scale_color_manual(values = method_colors, drop = FALSE) +
-  scale_shape_manual(values = method_shapes, drop = FALSE) +
-  scale_x_continuous(breaks = c(100, 200, 400)) +
-  scale_y_continuous(labels = scales::comma) + 
-  labs(
-    x = "Number of Predictors (p)",
-    y = "Average Computation Time (Seconds)"
-  ) +
-  pub_theme
-
-# C. Right Panel: MSE vs P (Boxplots)
+# B. Panel 1: MSE vs P 
 p_mse <- ggplot(plot_data_box, aes(x = P_factor, y = MSE, fill = Method)) +
   geom_boxplot(color = "black", outlier.size = 1.5, outlier.alpha = 0.6, 
                position = position_dodge(0.8), linewidth = 0.5, alpha = 0.6) +
@@ -158,26 +150,31 @@ p_mse <- ggplot(plot_data_box, aes(x = P_factor, y = MSE, fill = Method)) +
   ) +
   pub_theme
 
-# Combine and force ONE perfectly centered legend (No A/B tags)
-combined_plot <- p_time + p_mse + 
+# C. Panel 2: Computation Time vs P (Line Plot)
+p_time <- ggplot(plot_data_line, aes(x = P, y = Mean_Time, color = Method, shape = Method)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3.5) +
+  scale_color_manual(values = method_colors, drop = FALSE) +
+  scale_shape_manual(values = method_shapes, drop = FALSE) +
+  scale_x_continuous(breaks = c(100, 200, 400)) +
+  scale_y_continuous(labels = scales::comma) + 
+  labs(
+    x = "Number of Predictors (p)",
+    y = "Average Computation Time (Seconds)"
+  ) +
+  pub_theme
+
+# Combine and force ONE perfectly centered native Boxplot legend
+combined_plot <- p_mse + p_time + 
   plot_layout(guides = "collect") & 
   theme(legend.position = "bottom", 
         legend.title = element_blank(),
         legend.text = element_text(size = 13),
         legend.margin = margin(t = 0)) &
   guides(
-    fill = guide_legend(
-      nrow = 1, 
-      override.aes = list(
-        shape = method_shapes,
-        color = method_colors,
-        fill = method_colors,
-        linetype = c("blank", "solid", "solid", "solid"),
-        alpha = 0.6
-      )
-    ),
-    color = "none",
-    shape = "none"
+    fill = guide_legend(nrow = 1), 
+    color = "none",                
+    shape = "none"                 
   )
 
 plot_file <- "simulations/figures/main_simulations_plot.pdf"
