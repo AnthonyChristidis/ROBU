@@ -1,111 +1,105 @@
-# ----------------------------------------------------------------
-# ROBU: Generate Plots and Tables for Proteogenomics Application
-# ----------------------------------------------------------------
+# -----------------------------------------------------------
+# ROBU: Generate Plots and Tables for k-Sensitivity Analysis 
+# -----------------------------------------------------------
 
 library(ggplot2)
 library(dplyr)
-library(tidyr) 
-library(scales) 
+library(patchwork) 
+library(scales)
 
-cat("\n--- Generating Proteogenomics Application Results ---\n")
+cat("\n--- Generating k-Sensitivity Analysis Results ---\n")
 
-# Ensure the figures directory exists
-if (!dir.exists("application/figures")) dir.create("application/figures", recursive = TRUE)
+if (!dir.exists("simulations/figures")) {
+  dir.create("simulations/figures", recursive = TRUE)
+}
 
-# 1. Load the data
-table_data <- readRDS("application/results/tcga_performance_table.rds")
-plot_data_full <- readRDS("application/results/tcga_residuals_plotdata.rds")
+# 1. Load the data 
+result_files <- list.files("simulations/results", pattern = "k_sensitivity_k.*\\.rds$", full.names = TRUE)
+if(length(result_files) == 0) stop("No sensitivity simulation files found! Check the directory.")
 
-# ________________________
+results <- bind_rows(lapply(result_files, readRDS)) |> distinct() 
+results$K_factor <- as.factor(results$K)
+
+# Set epsilon target 
+eps <- 0.20
+plot_data <- results |> filter(Contamination == eps)
+
+# __________________________
 # 2. Print Summary Table 
-# ________________________
+# __________________________
 
-cat("\n--- Application Table Data ---\n")
+cat(sprintf("\n--- Sensitivity Table Data (eps = %.2f) ---\n", eps))
 
-# Reorder factor levels
-table_data$Method <- factor(table_data$Method, levels = c("OLS", "Standard MM", "Deterministic MM", "ROBU"))
-table_data <- table_data[order(table_data$Method), ]
-
-# Format numbers and fix the column name mismatch
-table_data <- table_data |>
+summary_table <- plot_data |>
+  group_by(K, BlockSize) |>
+  summarize(
+    MSE = mean(MSE, na.rm = TRUE),
+    Time = mean(Time, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+  arrange(K) |>
   mutate(
-    Time = sprintf("%.2f", Time_Seconds),
-    MSE = sprintf("%.2f", MSE_vs_Baseline),
-    TP = sprintf("%.1f", TP),
-    FP = sprintf("%.1f", FP)
+    MSE = ifelse(MSE > 1000, 
+                 formatC(round(MSE, 1), format = "f", big.mark = ",", digits = 1), 
+                 sprintf("%.1f", MSE)),
+    Time = sprintf("%.1f", Time)
   )
 
-# Fix NAs for OLS
-table_data$TP[table_data$Method == "OLS"] <- "--"
-table_data$FP[table_data$Method == "OLS"] <- "--"
+print(as.data.frame(summary_table), row.names = FALSE)
 
-# Order columns exactly as requested: Method, MSE, FP, TP, Time
-table_data <- table_data |> select(Method, MSE, FP, TP, Time)
+# _______________________________________
+# 3. Generate High-End Publication Plots 
+# _______________________________________
 
-# Print cleanly to console
-print(as.data.frame(table_data), row.names = FALSE)
+cat("\n--- Generating PDF Plots ---\n")
 
-# ____________________________________________
-# 3. Generate Two-Panel Residuals Scatterplot
-# ____________________________________________
+x_labels <- as.character(summary_table$K)
 
-cat("\n--- Generating PDF Plot ---\n")
-
-# Extract only the 50th replication to keep the plot clean (882 points)
-plot_data <- plot_data_full |> filter(Rep == 50)
-
-# A. Format the data for plotting
-plot_data$Observation <- ifelse(plot_data$Is_Contaminated, "Adversarial Outlier", "Clean Observation")
-plot_data$Observation <- factor(plot_data$Observation, levels = c("Clean Observation", "Adversarial Outlier"))
-
-# Reshape the data using RAW Residuals!
-plot_long <- pivot_longer(
-  data = plot_data,
-  cols = c(Res_MM_Contam, Res_ROBU_Contam), 
-  names_to = "Method",
-  values_to = "Contaminated_Residual"
-)
-
-# Clean up the method names for the plot titles
-plot_long$Method <- ifelse(plot_long$Method == "Res_MM_Contam", 
-                           "Standard MM-Estimator", 
-                           "ROBU Algorithm")
-
-plot_long$Method <- factor(plot_long$Method, levels = c("Standard MM-Estimator", "ROBU Algorithm"))
-
-# B. Build the Y=X plot WITHOUT squish!
-p <- ggplot(plot_long, aes(x = Res_CleanBaseline, y = Contaminated_Residual, 
-                           color = Observation, shape = Observation)) +
-  
-  # Identity line (Perfect recovery)
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black", linewidth = 0.8) +
-  
-  geom_point(size = 2, alpha = 0.6) +
-  scale_color_manual(values = c("Clean Observation" = "#2C7BB6", "Adversarial Outlier" = "#D7191C")) +
-  scale_shape_manual(values = c("Clean Observation" = 16, "Adversarial Outlier" = 4)) +
-  facet_wrap(~ Method, scales = "fixed") + 
-  
-  # Zoom the plot to [-5, 5]. By removing "oob = scales::squish", 
-  # the massive outliers will naturally fall off the canvas!
-  scale_x_continuous(limits = c(-5, 5)) +
-  scale_y_continuous(limits = c(-5, 5)) +
-  
-  labs(
-    x = "Baseline Raw Residuals (Clean Data)",
-    y = "Estimated Raw Residuals (Contaminated Data)"
-  ) +
-  theme_bw(base_size = 14) +
+pub_theme <- theme_classic(base_size = 14) +
   theme(
-    legend.position = "bottom",
-    legend.title = element_blank(),
-    strip.text = element_text(face = "bold", size = 12),
-    strip.background = element_rect(fill = "#f0f0f0"),
-    panel.grid.minor = element_blank(),
-    axis.title = element_text(face = "bold")
+    plot.title = element_blank(), 
+    axis.title = element_text(face = "bold", size = 12),
+    axis.text.x = element_text(angle = 0, hjust = 0.5, size = 10, color = "black"), 
+    axis.text.y = element_text(size = 11, color = "black"),
+    panel.grid.major.y = element_line(color = "gray90", linewidth = 0.5, linetype = "dashed"),
+    axis.line = element_line(color = "black", linewidth = 0.6)
   )
 
-# Save the plot (suppressing warnings about removed outlier points off the canvas)
-plot_file <- "application/figures/tcga_residuals_plot.pdf"
-suppressWarnings(ggsave(filename = plot_file, plot = p, width = 10, height = 5.5, dpi = 300))
+# A. Plot Time vs K (Left Panel - Log Scale for exponential drop)
+p_time <- ggplot(plot_data, aes(x = K_factor, y = Time)) +
+  geom_boxplot(fill = "#E0F3F8", color = "#313695", outlier.shape = NA, width = 0.6, linewidth = 0.6) +
+  geom_jitter(width = 0.15, alpha = 0.6, size = 1.5, color = "#313695", shape = 16) +
+  scale_y_log10(
+    labels = scales::label_number(accuracy = 0.1, big.mark = ","),
+    breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5)
+  ) +
+  scale_x_discrete(labels = x_labels) +
+  labs(
+    x = "Number of Blocks (k)",
+    y = "Computation Time (Seconds, Log Scale)"
+  ) +
+  pub_theme
 
-cat(sprintf("Plot successfully saved to: %s\n", plot_file))
+# B. Plot MSE vs K (Right Panel)
+p_mse <- ggplot(plot_data, aes(x = K_factor, y = MSE)) +
+  geom_boxplot(fill = "#FDDBC7", color = "#D55E00", outlier.shape = NA, width = 0.6, linewidth = 0.6) +
+  geom_jitter(width = 0.15, alpha = 0.6, size = 1.5, color = "#D55E00", shape = 16) +
+  scale_y_log10(
+    labels = scales::label_number(accuracy = 0.1, big.mark = ","),
+    breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5)
+  ) +
+  scale_x_discrete(labels = x_labels) +
+  labs(
+    x = "Number of Blocks (k)",
+    y = "Mean Squared Error (Log Scale)"
+  ) +
+  pub_theme
+
+# Combine the two plots side-by-side using patchwork
+combined_plot <- p_time + p_mse + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag = element_text(face = "bold", size = 16))
+
+plot_file <- "simulations/figures/k_sensitivity_plot_20.pdf"
+ggsave(filename = plot_file, plot = combined_plot, width = 11, height = 5.5, dpi = 300)
+
+cat(sprintf("Saved: %s\n", plot_file))
