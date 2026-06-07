@@ -77,12 +77,12 @@ evaluate_method <- function(method_name, expr, beta.true, p.vars, out.ind) {
     tp <- NA
     fp <- NA
   } else {
-    # Extract weights (standardized to usually be < 0.5 for rejected outliers)
+    # Extract weights (strictly 0 for trimmed/rejected outliers)
     wt <- fit$rweights
     if (is.null(wt)) wt <- fit$weights # fallback
     
     if (!is.null(wt)) {
-      is_detected <- wt < 0.5
+      is_detected <- wt == 0
       is_actual <- out.ind == 1
       tp <- sum(is_detected & is_actual)
       fp <- sum(is_detected & !is_actual)
@@ -125,8 +125,8 @@ for (p.vars in p.vec) {
     refine.tol = 1e-5      
   )
   
-  # Calculate optimal block size for ROBU dynamically
-  k.blocks <- max(1, floor(p.vars / 20)) 
+  # Calculate optimal block size for ROBU dynamically (10 variables per block)
+  k.blocks <- max(1, floor(p.vars / 10)) 
   
   for (cont.level in cont.vec) {
     
