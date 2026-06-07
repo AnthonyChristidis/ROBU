@@ -110,7 +110,8 @@ scale_clean <- fit_clean$scale
 # 4. Repeated Contamination & Benchmarking (50 Replications)
 # ______________________________________________________________
 
-k.blocks <- max(1, floor(p / 20))
+# Calculate optimal block size (10 variables per block)
+k.blocks <- max(1, floor(p / 10))
 n_reps <- 50
 cont_prop <- 0.15
 n_cont <- floor(cont_prop * n)
@@ -131,7 +132,8 @@ calc_tp_fp <- function(fit, is_outlier) {
   if (is.null(wt)) wt <- fit$weights
   if (is.null(wt)) return(c(NA, NA))
   
-  is_detected <- wt < 0.5
+  # Weights strictly 0 indicate trimmed/rejected outliers
+  is_detected <- wt == 0
   tp <- sum(is_detected & is_outlier)
   fp <- sum(is_detected & !is_outlier)
   return(c(tp, fp))
