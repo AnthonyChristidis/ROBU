@@ -62,8 +62,8 @@ cat("\n--- Generating PDF Plot ---\n")
 plot_data <- plot_data_full |> filter(Rep == 50)
 
 # A. Format the data for plotting
-plot_data$Observation <- ifelse(plot_data$Is_Contaminated, "Adversarial Outlier", "Clean Observation")
-plot_data$Observation <- factor(plot_data$Observation, levels = c("Clean Observation", "Adversarial Outlier"))
+plot_data$Observation <- ifelse(plot_data$Is_Contaminated, "High-Leverage Outlier", "Clean Observation")
+plot_data$Observation <- factor(plot_data$Observation, levels = c("Clean Observation", "High-Leverage Outlier"))
 
 # Reshape the data using RAW Residuals!
 plot_long <- pivot_longer(
@@ -88,8 +88,8 @@ p <- ggplot(plot_long, aes(x = Res_CleanBaseline, y = Contaminated_Residual,
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black", linewidth = 0.8) +
   
   geom_point(size = 2, alpha = 0.6) +
-  scale_color_manual(values = c("Clean Observation" = "#2C7BB6", "Adversarial Outlier" = "#D7191C")) +
-  scale_shape_manual(values = c("Clean Observation" = 16, "Adversarial Outlier" = 4)) +
+  scale_color_manual(values = c("Clean Observation" = "#2C7BB6", "High-Leverage Outlier" = "#D7191C")) +
+  scale_shape_manual(values = c("Clean Observation" = 16, "High-Leverage Outlier" = 4)) +
   facet_wrap(~ Method, scales = "fixed") + 
   
   # Zoom the plot to [-5, 5]. By removing "oob = scales::squish", 
