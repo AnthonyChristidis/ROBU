@@ -1,4 +1,4 @@
-# ROBU: Fast MM-Estimation via Robust Orthogonal Block Updates
+# ROBU: Fast Robust Regression via Orthogonal Block Updates
 
 **Authors:** Anthony Christidis and Matías Salibián-Barrera
 
