@@ -18,9 +18,9 @@ set.seed(0)
 # __________________________
 
 n.obs <- 1000
-p.vars <- 400
+p.vars <- 300
 cont.vec <- c(0.20, 0.30) 
-n.reps <- 50              # Full Monte Carlo replications
+n.reps <- 50              
 
 # Calculate optimal block size
 k.blocks <- max(1, floor(p.vars / 10))

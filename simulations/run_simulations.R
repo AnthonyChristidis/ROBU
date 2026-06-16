@@ -19,7 +19,7 @@ source("simulations/generate_data.R")
 set.seed(0)
 
 n.obs <- 1000
-p.vec <- c(100, 200, 400)
+p.vec <- c(100, 200, 300)
 cont.vec <- c(0.10, 0.20, 0.30)   # Expanded epsilons
 scenario.vec <- 1:3               # 1=Clean, 2=Vertical, 3=Leverage
 n.reps <- 50
@@ -112,8 +112,8 @@ cat("Starting Monte Carlo Simulations...\n")
 for (p.vars in p.vec) {
   
   # Dynamic computational budget to give Standard MM a fair fight
-  k.max_val <- ifelse(p.vars >= 400, 5000, 2000)
-  nResample_val <- ifelse(p.vars >= 400, 5000, 2000)
+  k.max_val <- ifelse(p.vars >= 300, 5000, 2000)
+  nResample_val <- ifelse(p.vars >= 300, 5000, 2000)
   
   mm.control <- lmrob.control(
     method = "MM", 
