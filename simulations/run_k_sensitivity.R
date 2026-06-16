@@ -18,7 +18,7 @@ source("simulations/generate_data.R")
 
 set.seed(0)
 
-n.obs <- 1000
+n.obs <- 1500         
 p.vars <- 400
 n.reps <- 50          # 50 reps is sufficient to show the trend
 cont.vec <- c(0.20)   # Updated to 0.20 to align with new main simulation grid

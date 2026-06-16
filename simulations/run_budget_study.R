@@ -17,8 +17,8 @@ set.seed(0)
 # 1. Simulation Parameters
 # __________________________
 
-n.obs <- 1000
-p.vars <- 300
+n.obs <- 1500      
+p.vars <- 400      
 cont.vec <- c(0.20, 0.30) 
 n.reps <- 50              
 
