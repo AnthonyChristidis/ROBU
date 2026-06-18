@@ -53,7 +53,13 @@ evaluate_robu_k <- function(x.dat, y.dat, k.val, beta.true, out.ind) {
   
   fit <- tryCatch({
     withCallingHandlers(
-      robu(x = x.dat, y = y.dat, k = k.val, robu.control = my.control, m.control = my.control),
+      if (k.val == 1) {
+        # Baseline unblocked Standard MM
+        robustbase::lmrob(y.dat ~ x.dat - 1, control = my.control)
+      } else {
+        # ROBU blockwise
+        robu(x = x.dat, y = y.dat, k = k.val, robu.control = my.control, m.control = my.control)
+      },
       warning = function(w) {
         msg <- w$message
         if (grepl("S refinements did not converge", msg) || grepl("S-step", msg)) {
@@ -75,8 +81,9 @@ evaluate_robu_k <- function(x.dat, y.dat, k.val, beta.true, out.ind) {
   end_time <- proc.time()["elapsed"]
   time_elapsed <- end_time - start_time
   
-  # MSE: strictly the squared norm (sum of squared errors)
-  mse <- sum((fit$coefficients - beta.true)^2)
+  # Safely extract coefficients whether it's an lmrob object or robu list
+  coefs <- if (!is.null(fit$coefficients)) fit$coefficients else coef(fit)
+  mse <- sum((coefs - beta.true)^2)
   
   # Outlier Detection Tracking
   wt <- fit$rweights
@@ -148,7 +155,7 @@ for (cont.level in cont.vec) {
       # Always generate Scenario 3 (Concentrated Leverage Points)
       dat <- generate_data(n = n.obs, p = p.vars, cont.prop = cont.level, leverage = TRUE)
       
-      # Run ROBU with the current k
+      # Run ROBU with the current k (eval function handles k=1 vs k>1)
       res.robu <- evaluate_robu_k(dat$x, dat$y, k.val, dat$beta.true, dat$out.ind)
       
       # Bind Results
