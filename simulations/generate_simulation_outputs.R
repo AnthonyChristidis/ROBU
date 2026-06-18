@@ -14,7 +14,7 @@ cat("\n--- Generating Main Simulation Results ---\n")
 # 1. Load all simulation .rds files
 # __________________________________
 
-result_files <- list.files("simulations/results", pattern = "sim_n1000_p.*\\.rds$", full.names = TRUE)
+result_files <- list.files("simulations/results", pattern = "sim_n1500_p.*\\.rds$", full.names = TRUE)
 if (length(result_files) == 0) stop("No simulation files found! Check the directory.")
 
 results <- bind_rows(lapply(result_files, readRDS)) |> distinct()
