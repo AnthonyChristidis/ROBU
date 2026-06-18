@@ -51,7 +51,7 @@ cat("Generating MSE Boxplot...\n")
 
 p_mse <- ggplot(results, aes(x = Eps_Factor, y = MSE, fill = Method)) +
   geom_boxplot(color = "black", outlier.size = 1.5, outlier.alpha = 0.6, 
-               width = 0.45, position = position_dodge(width = 0.65), 
+               width = 0.35, position = position_dodge(width = 0.65), 
                linewidth = 0.5, alpha = 0.8) +
   scale_y_log10(
     labels = scales::label_number(accuracy = 0.1, big.mark = ","),
