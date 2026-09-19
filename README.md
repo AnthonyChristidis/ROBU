@@ -2,9 +2,13 @@
 
 **Authors:** Anthony Christidis and Matías Salibián-Barrera
 
-**Paper:** [arXiv:2606.26611](https://arxiv.org/abs/2606.26611)
+This repository contains the R implementation of the **ROBU** algorithm, as well as all code necessary to reproduce the simulation studies and real data applications from the manuscript.
 
-This repository contains the R implementation of the **ROBU** algorithm, as well as all code necessary to reproduce the simulation studies and real data applications from the manuscript [*"Fast Robust Regression via Orthogonal Block Updates"*](https://arxiv.org/abs/2606.26611) by Anthony Christidis and Matías Salibián-Barrera.
+The method and its theoretical properties are described in:
+
+> Christidis, A. and Salibián-Barrera, M. (2026). *Fast Robust Regression via
+> Orthogonal Block Updates*.
+> [arXiv:2606.26611](https://arxiv.org/abs/2606.26611)
 
 ## Overview
 
